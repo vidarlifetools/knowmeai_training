@@ -1,0 +1,53 @@
+{
+    "Controller": {
+        "connections": {
+            "UpdateFiles": [
+                "UpdateFeatures"
+            ],
+            "UpdateFeatures": [
+                "Label"
+            ],
+            "Label": [
+                "Train"
+            ]
+        }
+    },
+    "UpdateFiles": {
+        "name": "UpdateFiles",
+        "run": true,
+        "google_storage_key": "/home/vidar/projects/knowmeai/sensors/KnowMeAI-326518239433.json",
+        "google_storage_bucket": "knowmeai_bucket",
+        "destination_directory": "/home/vidar/projects/test_annotation_data/",
+        "file_types_to_copy": [".mp4", ".json", ".wav", "imu.dat", "_post.wav"],
+        "save_unannotated": false,
+        "client": "test_client",
+        "rec_id": "all",
+        "rec_id_": "2022-08-24-13-02-03-866912",
+        "log_directory": "/home/vidar/projects/tmp",
+        "update_interval_hours": 0
+
+    },
+    "UpdateFeatures": {
+        "name": "UpdateFeatures",
+        "google_storage_key": "/home/vidar/projects/knowmeai/sensors/KnowMeAI-326518239433.json",
+        "google_storage_bucket": "knowmeai_bucket",
+        "destination_directory": "/home/vidar/projects/test_annotation_data/",
+        "models_directory": "/home/vidar/projects/knowmeai/sensor_models",
+        "file_types_to_copy": [".mp4", ".json", ".wav", "imu.dat", "_post.wav"],
+        "force_postprocess": true,
+        "postprocess": ["face", "sound", "skeleton"],
+        "postprocess_choices": "sound, face and skeleton",
+        "display_face": false,
+        "convert_to_world": false,
+        "client": "test_client",
+        "rec_id": "all",
+        "rec_id_": "2022-08-24-13-02-03-866912",
+        "log_directory": "/home/vidar/projects/tmp"
+    },
+    "Label": {
+        "name": "Label"
+    },
+    "Train": {
+        "name": "Train"
+    }
+}
