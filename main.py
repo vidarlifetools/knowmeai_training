@@ -11,6 +11,8 @@ import time
 import socket
 from multiprocessing import Process, set_start_method
 from multiprocessing import Event
+from constants import FaceData, SoundData, SkeletonData
+
 
 
 from framework.module import Module
@@ -21,6 +23,7 @@ from processes.update_files import update_files, MODULE_UPDATE_FILES
 from processes.update_features import update_features, MODULE_UPDATE_FEATURES
 from processes.label import label, MODULE_LABEL
 from processes.train import train, MODULE_TRAIN
+from processes.compare import compare, MODULE_COMPARE
 
 logging.basicConfig(
     level=logging.INFO,
@@ -52,13 +55,15 @@ MODULES = {
     MODULE_UPDATE_FILES: update_files,
     MODULE_UPDATE_FEATURES: update_features,
     MODULE_LABEL: label,
-    MODULE_TRAIN: train
+    MODULE_TRAIN: train,
+    MODULE_COMPARE: compare
 }
 HOST_IPS = {
     MODULE_UPDATE_FILES: "192.168.10.215",
     MODULE_UPDATE_FEATURES: "192.168.10.215",
     MODULE_LABEL: "192.168.10.215",
-    MODULE_TRAIN: "192.168.10.215"
+    MODULE_TRAIN: "192.168.10.215",
+    MODULE_COMPARE: "192.168.10.215"
 }
 
 @dataclass
@@ -90,7 +95,7 @@ class Controller(Module):
         self.modules = dict()
         local_ip = get_local_ip()
         #logging.info(f"This machine has IP address {local_ip}")
-        data_ports = dict(zip(modules.nodes, range(60060, 60080)))
+        data_ports = dict(zip(modules.nodes, range(60080, 60100)))
 
         for n in modules.nodes:
             ins = [f"tcp://{HOST_IPS[x]}:{data_ports[x]}" for x in modules.predecessors(n)]

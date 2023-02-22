@@ -45,39 +45,46 @@ class UpdateFiles(DataModule):
         self.bucket = self.storage_client.bucket(self.config.google_storage_bucket)
 
     def loop(self):
+        start_time = 0
+        sleep(4)
         while self.is_running:
             changes = {}
-            if self.config.run:
-                # Update local files to match Google storage files
-                cloud_dict = self.get_cloud_dict(self.config.client)
-                dest_dict = self.get_dest_dict(self.config.client)
-                for client in cloud_dict.keys():
-                    if client == self.config.client or self.config.client == "all":
-                        found = [f for f in dest_dict.keys() if client == f]
-                        if not found:
-                            # Create the directory structure for new client
-                            self.logger.info(f"Creating directory structure for {client}")
-                            mkdir(self.config.destination_directory + client)
-                            mkdir(self.config.destination_directory + client + "/raw")
-                            mkdir(
-                                self.config.destination_directory + client + "/annotation"
-                            )
-                            # Add the new client to dest_clients. Since empty, all files will be copied
-                            dest_dict["client"] = {"raw": [], "annotation": []}
+            if start_time - time() <= 0:
+                if self.config.run:
+                    # Update local files to match Google storage files
+                    cloud_dict = self.get_cloud_dict(self.config.client)
+                    dest_dict = self.get_dest_dict(self.config.client)
+                    for client in cloud_dict.keys():
+                        if client == self.config.client or self.config.client == "all":
+                            found = [f for f in dest_dict.keys() if client == f]
+                            if not found:
+                                # Create the directory structure for new client
+                                self.logger.info(f"Creating directory structure for {client}")
+                                mkdir(self.config.destination_directory + client)
+                                mkdir(self.config.destination_directory + client + "/raw")
+                                mkdir(
+                                    self.config.destination_directory + client + "/annotation"
+                                )
+                                # Add the new client to dest_clients. Since empty, all files will be copied
+                                dest_dict[client] = {"raw": [], "annotation": []}
 
-                        added_files, deleted_files = self.add_remove_annotation_files(client, cloud_dict,
-                                                                                              dest_dict)
-                        changes["annotation_files"] = {client: [{"deleted": deleted_files, "added": added_files}]}
-                        added_files, deleted_files = self.add_remove_raw_files(client, cloud_dict, dest_dict)
-                        changes["raw_files"] = {client: [{"deleted": deleted_files, "added": added_files}]}
+                            added_files, deleted_files = self.add_remove_annotation_files(client, cloud_dict,
+                                                                                                  dest_dict)
+                            changes["annotation_files"] = {client: [{"deleted": deleted_files, "added": added_files}]}
+                            added_files, deleted_files = self.add_remove_raw_files(client, cloud_dict, dest_dict)
+                            changes["raw_files"] = {client: [{"deleted": deleted_files, "added": added_files}]}
 
-                if changes["annotation_files"].keys() or changes["raw_files"].keys():
-                    self.log_changes(changes)
-            self.send_result(UpdateFilesMessage(time(), changes))
-            if self.config.update_interval_hours != 0:
-                sleep(self.config.update_interval_hours*3600)
-            else:
-                break
+                    if changes["annotation_files"].keys() or changes["raw_files"].keys():
+                        self.log_changes(changes)
+                print("Sending Update Files message")
+                self.send_result(UpdateFilesMessage(time(), changes))
+                start_time = self.config.update_interval_hours*3600+time()
+
+            sleep(1)
+            # TODO Make sure to terminate when is_running is false
+            if self.config.update_interval_hours == 0:
+                # Never start, continue looping until is_running is set to False
+                start_time = time() + 10
         self.close_sockets()
 
 
@@ -211,42 +218,41 @@ class UpdateFiles(DataModule):
                                 dest_dict[dest_client]["annotation"].append(file)
         return dest_dict
 
-    def add_remove_annotation_files(self,client, cloud_dict, dest_dict):
+    def add_remove_annotation_files(self, client, cloud_dict, dest_dict):
         deleted_files = {}
         added_files = {}
         # Check if there are files to be deleted from the annotation directory
-        for dest_client in dest_dict:
-            deleted_files[dest_client] = []
-            added_files[dest_client] = []
-            if len(dest_dict[dest_client]["annotation"]) > 0:
-                for ann in dest_dict[dest_client]["annotation"]:
-                    if ann not in cloud_dict[dest_client]["annotation"]:
-                        self.logger.info(f"Removing: {ann} from {dest_client}")
-                        os.remove(
+        deleted_files[client] = []
+        added_files[client] = []
+        if len(dest_dict[client]["annotation"]) > 0:
+            for ann in dest_dict[client]["annotation"]:
+                if ann not in cloud_dict[client]["annotation"]:
+                    self.logger.info(f"Removing: {ann} from {client}")
+                    os.remove(
+                        self.config.destination_directory
+                        + client
+                        + "/annotation/"
+                        + ann
+                    )
+                    deleted_files[client].append("/annotation/" + ann)
+        # Check if there are files to be added to the annotation directory
+        self.logger.info(f"Checking if there are files to be added to the annotation directory")
+        if len(cloud_dict[client]["annotation"]) > 0:
+            for i, ann in enumerate(cloud_dict[client]["annotation"]):
+                if ann not in dest_dict[client]["annotation"]:
+                    self.logger.info(f"Adding: {ann} to client: {client}")
+                    cloud_file = (
+                            "annotation/" + client + "/annotation/" + ann
+                    )
+                    dest_file = (
                             self.config.destination_directory
-                            + dest_client
+                            + client
                             + "/annotation/"
                             + ann
-                        )
-                        deleted_files[dest_client].append("/annotation/" + ann)
-            # Check if there are files to be added to the annotation directory
-            self.logger.info(f"Checking if there are files to be added to the annotation directory")
-            if len(cloud_dict[dest_client]["annotation"]) > 0:
-                for i, ann in enumerate(cloud_dict[dest_client]["annotation"]):
-                    if ann not in dest_dict[dest_client]["annotation"]:
-                        self.logger.info(f"Adding: {ann} to client: {dest_client}")
-                        cloud_file = (
-                                "annotation/" + dest_client + "/annotation/" + ann
-                        )
-                        dest_file = (
-                                self.config.destination_directory
-                                + dest_client
-                                + "/annotation/"
-                                + ann
-                        )
-                        context_blob = self.bucket.blob(cloud_file)
-                        context_blob.download_to_filename(dest_file)
-                        added_files[dest_client].append("/annotation/" + ann)
+                    )
+                    context_blob = self.bucket.blob(cloud_file)
+                    context_blob.download_to_filename(dest_file)
+                    added_files[client].append("/annotation/" + ann)
 
         return added_files, deleted_files
 
@@ -288,16 +294,18 @@ class UpdateFiles(DataModule):
                     deleted_files.append("/raw/" + dest_raw_file)
 
         # Check if there are files to be added to the raw directory
-        self.logger.info(f"Check if there are files to be added from the raw director")
+        self.logger.info(f"Check if there are files to be added to the raw director")
         if len(cloud_dict[client]["raw"]):
             for dest_raw_file in cloud_dict[client]["raw"]:
+                #print(f"Checking {dest_raw_file}, rec id : {self.config.rec_id}, {dest_raw_file in annotated_file}, {self.config.rec_id in dest_raw_file}")
                 if dest_raw_file not in dest_dict[client]["raw"] and (dest_raw_file in annotated_file or self.config.save_unannotated) \
                         and (self.config.rec_id == "all" or self.config.rec_id in dest_raw_file):
-                    self.logger.info(f"Adding: {dest_raw_file} to client: {client}")
+                    print(f"File not found in destination dir.")
                     cloud_file = "annotation/" + client + "/raw/" + dest_raw_file
                     # Check if file type is to be stored
                     for string in self.config.file_types_to_copy:
                         if string in dest_raw_file and "_depth" not in dest_raw_file:
+                            self.logger.info(f"Adding: {dest_raw_file} to {client}")
                             dest_file = (
                                     self.config.destination_directory
                                     + client
@@ -396,18 +404,6 @@ class UpdateFiles(DataModule):
                                                 sound_annotations[client][video_file.replace(".mp4", ".wav")].append(ann_data)
                                 if found:
                                     os.remove( json_file )
-
-
-
-    def create_feature_directories(self, client):
-        # Check if face, skeleton and sound directories exist, create if not
-        dirs = listdir(self.config.destination_directory + client + "/")
-        for directory_name in ["face", "skeleton", "sound"]:
-            if not directory_name in dirs:
-                directory = os.path.join(self.config.destination_directory, client, directory_name)
-                self.logger.info(f"Creating dir: {directory}")
-                os.mkdir(directory)
-        time.sleep(1)
 
 
 

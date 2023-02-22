@@ -5,7 +5,8 @@
                 "UpdateFeatures"
             ],
             "UpdateFeatures": [
-                "Label"
+                "Label",
+                "Compare"
             ],
             "Label": [
                 "Train"
@@ -20,28 +21,29 @@
         "destination_directory": "/home/vidar/projects/test_annotation_data/",
         "file_types_to_copy": [".mp4", ".json", ".wav", "imu.dat", "_post.wav"],
         "save_unannotated": false,
-        "client": "test_client",
-        "rec_id": "all",
-        "rec_id_": "2022-08-24-13-02-03-866912",
+        "client": "ahmed",
+        "rec_id_": "all",
+        "rec_id": "2021-03-25-13-06-22-184291",
         "log_directory": "/home/vidar/projects/tmp",
-        "update_interval_hours": 0
+        "update_interval_hours": 1
 
     },
     "UpdateFeatures": {
         "name": "UpdateFeatures",
+        "run": true,
         "google_storage_key": "/home/vidar/projects/knowmeai/sensors/KnowMeAI-326518239433.json",
         "google_storage_bucket": "knowmeai_bucket",
         "destination_directory": "/home/vidar/projects/test_annotation_data/",
         "models_directory": "/home/vidar/projects/knowmeai/sensor_models",
         "file_types_to_copy": [".mp4", ".json", ".wav", "imu.dat", "_post.wav"],
-        "force_postprocess": true,
+        "force_postprocess": false,
         "postprocess": ["face", "sound", "skeleton"],
         "postprocess_choices": "sound, face and skeleton",
         "display_face": false,
         "convert_to_world": false,
-        "client": "test_client",
-        "rec_id": "all",
-        "rec_id_": "2022-08-24-13-02-03-866912",
+        "client": "ahmed",
+        "rec_id_": "all",
+        "rec_id": "2021-03-25-13-06-22-184291",
         "log_directory": "/home/vidar/projects/tmp"
     },
     "Label": {
@@ -49,5 +51,13 @@
     },
     "Train": {
         "name": "Train"
+    },
+    "Compare": {
+        "name": "Compare",
+        "compare_data_types": ["skeleton"],
+        "source_directory": "/home/vidar/projects/test_annotation_data/",
+        "facit_directory": "/home/vidar/projects/annotation_data/",
+        "client": "ahmed",
+        "rec_id": "2021-03-25-13-06-22-184291"
     }
 }
