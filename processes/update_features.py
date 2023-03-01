@@ -17,7 +17,7 @@ import multiprocessing
 
 from sound_utils import SoundFeature
 from gesture_utils import PoseFeature
-from expr_utils import ExprFeature
+from face_utils import FaceFeature
 from person_utils import PersonBbox
 from feature_constants import sound_sample_rate, sound_feature_length, sound_feature_step
 from constants import FaceData, SkeletonData, SoundData
@@ -56,7 +56,7 @@ class UpdateFeatures(DataModule):
     def __init__(self, *args):
         super().__init__(*args)
         self.sound_feature = SoundFeature()
-        self.face_feature = ExprFeature()
+        self.face_feature = FaceFeature()
         self.pose_feature = PoseFeature()
 
     def process_data_msg(self, msg):
@@ -240,7 +240,7 @@ def remove_files_to_be_reprocessed(client, config, logger):
 def process_face(client, file_id, dest_dict, config, logger):
     logger.info(f"Processing FACE for {client}, file id {file_id} started at {time.time()}")
     if not file_id in dest_dict[client]["face"]:
-        face_feature = ExprFeature()
+        face_feature = FaceFeature()
         face_dir = join(config.destination_directory, client, "face", file_id)
         logger.info(f"Creating: , {face_dir}")
         if not os.path.exists(face_dir):
@@ -274,7 +274,7 @@ def process_face(client, file_id, dest_dict, config, logger):
                 x1, y1, x2, y2 = person_bbox
                 face_landmarks, valid, _ = face_feature.get(frame[y1:y2, x1:x2].copy())
                 # TODO check if face image is required
-                face_data = FaceData(valid, [], face_landmarks)
+                face_data = FaceData(valid, face_landmarks, person_bbox)
             else:
                 face_data = FaceData(False, [], None)
             with open(join(face_dir, str(frame_no) + ".data"), "wb") as f:
@@ -320,7 +320,7 @@ def process_skeleton(client, file_id, dest_dict, config, logger):
             if person_bbox:
                 x1, y1, x2, y2 = person_bbox
                 pose_keypoints, valid, _ = pose_feature.get(frame[y1:y2, x1:x2].copy())
-                skeleton_data = SkeletonData(valid, [], pose_keypoints)
+                skeleton_data = SkeletonData(valid, pose_keypoints, person_bbox)
                 # TODO check if face image is required
             else:
                 skeleton_data = SkeletonData(False, [], None)

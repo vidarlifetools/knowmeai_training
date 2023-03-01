@@ -5,8 +5,7 @@
                 "UpdateFeatures"
             ],
             "UpdateFeatures": [
-                "Label",
-                "Compare"
+                "Label"
             ],
             "Label": [
                 "Train"
@@ -36,7 +35,7 @@
         "destination_directory": "/home/vidar/projects/test_annotation_data/",
         "models_directory": "/home/vidar/projects/knowmeai/sensor_models",
         "file_types_to_copy": [".mp4", ".json", ".wav", "imu.dat", "_post.wav"],
-        "force_postprocess": false,
+        "force_postprocess": true,
         "postprocess": ["face", "sound", "skeleton"],
         "postprocess_choices": "sound, face and skeleton",
         "display_face": false,
