@@ -8,6 +8,7 @@ from os.path import isfile, join
 from google.cloud import storage
 from datetime import datetime
 import json
+from utilities.eval_sound import eval_sound_annotations
 
 
 MODULE_UPDATE_FILES = "UpdateFiles"
@@ -73,7 +74,9 @@ class UpdateFiles(DataModule):
                             changes["annotation_files"] = {client: [{"deleted": deleted_files, "added": added_files}]}
                             added_files, deleted_files = self.add_remove_raw_files(client, cloud_dict, dest_dict)
                             changes["raw_files"] = {client: [{"deleted": deleted_files, "added": added_files}]}
-
+                        # Check overlapping sound and expression annotations
+                        overlapping, only_sound, only_expr = eval_sound_annotations(self.config.destination_directory, client)
+                        print(f"Overlapping {overlapping}, only sound {only_sound}, only expression {only_expr}")
                     if changes["annotation_files"].keys() or changes["raw_files"].keys():
                         self.log_changes(changes)
                 print("Sending Update Files message")
